@@ -1,7 +1,9 @@
 package cc.jml1024.kaptcha.util;
 
 import java.awt.*;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * This class provides helper methods in parsing configuration values.
@@ -82,13 +84,19 @@ public class ConfigHelper {
             instance = defaultInstance;
         } else {
             try {
-                instance = Class.forName(paramValue).newInstance();
+                Class<?> clazz = Class.forName(paramValue);
+                Constructor<?> constructor = clazz.getConstructor();
+                instance = constructor.newInstance();
             } catch (IllegalAccessException iae) {
                 throw new ConfigException(paramName, paramValue, iae);
             } catch (ClassNotFoundException cnfe) {
                 throw new ConfigException(paramName, paramValue, cnfe);
             } catch (InstantiationException ie) {
                 throw new ConfigException(paramName, paramValue, ie);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
             }
         }
 
