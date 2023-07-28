@@ -10,6 +10,7 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import javax.imageio.ImageIO;
 
@@ -76,22 +77,30 @@ public class KaptchaServlet extends HttpServlet implements Servlet {
         // create the text for the image
         String capText = this.kaptchaProducer.createText();
 
-        // create the image with the text
-        BufferedImage bi = this.kaptchaProducer.createImage(capText);
-
-        ServletOutputStream out = resp.getOutputStream();
-
-        // write the data out
-        ImageIO.write(bi, "jpg", out);
-
-        // fixes issue #69: set the attributes after we write the image in case the image writing fails.
+        HttpSession session = req.getSession();
 
         // store the text in the session
-        req.getSession().setAttribute(this.sessionKeyValue, capText);
+        session.setAttribute(this.sessionKeyValue, capText);
 
         // store the date in the session so that it can be compared
         // against to make sure someone hasn't taken too long to enter
         // their kaptcha
-        req.getSession().setAttribute(this.sessionKeyDateValue, new Date());
+        session.setAttribute(this.sessionKeyDateValue, new Date());
+
+        try {
+            // create the image with the text
+            BufferedImage bi = this.kaptchaProducer.createImage(capText);
+
+            ServletOutputStream out = resp.getOutputStream();
+
+            // write the data out
+            ImageIO.write(bi, "jpg", out);
+            // fixes issue #69: set the attributes after we write the image in case the image writing fails.
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            session.removeAttribute(this.sessionKeyValue);
+            session.removeAttribute(this.sessionKeyDateValue);
+        }
     }
 }
